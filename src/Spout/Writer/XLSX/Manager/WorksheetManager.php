@@ -273,11 +273,16 @@ EOD;
             throw new InvalidArgumentException('Trying to add a value that exceeds the maximum number of characters allowed in a cell (32,767)');
         }
 
-        if ($this->shouldUseInlineStrings) {
-            $cellXMLFragment = ' t="inlineStr"><is><t>' . $this->stringsEscaper->escape($cellValue) . '</t></is></c>';
+        if (preg_match('/HYPERLINK\((.+)\)/i', $cellValue, $matches)) {
+            $value = $this->stringsEscaper->escape($matches[1]);
+            $cellXMLFragment = ' t="str"><f>' . sprintf('HYPERLINK("%s","%s")', $value, $value) . '</f><v>' . $value . '</v></c>';
         } else {
-            $sharedStringId = $this->sharedStringsManager->writeString($cellValue);
-            $cellXMLFragment = ' t="s"><v>' . $sharedStringId . '</v></c>';
+            if ($this->shouldUseInlineStrings) {
+                $cellXMLFragment = ' t="inlineStr"><is><t>' . $this->stringsEscaper->escape($cellValue) . '</t></is></c>';
+            } else {
+                $sharedStringId = $this->sharedStringsManager->writeString($cellValue);
+                $cellXMLFragment = ' t="s"><v>' . $sharedStringId . '</v></c>';
+            }
         }
 
         return $cellXMLFragment;
